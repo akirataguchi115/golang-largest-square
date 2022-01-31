@@ -1,0 +1,20 @@
+image: golang:1.17
+
+pipelines:
+  default:
+    - step:
+        name: Test
+        script:
+          - go test ./...
+    - step:
+        name: Build
+        script:
+          - mkdir -p .tmp
+          - go build -o .tmp/main
+        artifacts:
+          - .tmp/main
+    - step:
+        name: Validate
+        script:
+          - find ./boards -type f ! -iname '*.sha256' -exec sh -c './.tmp/main {}>.tmp/$(basename {}).submit' \;
+          - find .tmp -iname '*.submit' -type f -print0|xargs -0 -I@ sh -c 'echo $(cat boards/$(basename @ .submit).sha256) @|sha256sum -c --quiet' \;
